@@ -1,0 +1,12 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: hydn-co/build-tools/.github/workflows/collector-release.yml@main
+    secrets: inherit
