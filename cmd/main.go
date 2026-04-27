@@ -31,7 +31,7 @@ func WithManifest() *runner.Manifest {
 		runner.FeatureTypeCollector,
 		new(options.TeamsCollectorOptions),
 		nil,
-		runner.FeatureResumeBehaviorLastActivity,
+		runner.FeatureResumeBehaviorNone,
 		runner.GrantCredential,
 		runner.Factory(collectors.NewTeamsCollector),
 	); err != nil {
@@ -47,7 +47,7 @@ func WithManifest() *runner.Manifest {
 		runner.FeatureTypeCollector,
 		new(options.ChannelsCollectorOptions),
 		nil,
-		runner.FeatureResumeBehaviorLastActivity,
+		runner.FeatureResumeBehaviorNone,
 		runner.GrantCredential,
 		runner.Factory(collectors.NewChannelsCollector),
 	); err != nil {
