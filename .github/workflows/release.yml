@@ -8,5 +8,4 @@ permissions:
 
 jobs:
   release:
-    uses: hydn-co/build-tools/.github/workflows/collector-release.yml@main
-    secrets: inherit
+    uses: hydn-co/build-tools/.github/workflows/connector-release.yml@main
