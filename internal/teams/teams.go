@@ -30,7 +30,7 @@ func ListTeams(ctx context.Context, token string) (*ListTeamsResult, error) {
 		return nil, err
 	}
 
-	req, err := msgraph_api.NewGraphRequest(ctx, http.MethodGet, endpoints.GraphTeamsListEndpoint, token, nil)
+	req, err := msgraph_api.NewGraphAdvancedRequest(ctx, http.MethodGet, endpoints.GraphTeamsListEndpoint, token, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create teams list request: %w", err)
 	}
@@ -50,7 +50,8 @@ func ListTeamsPage(ctx context.Context, token, pageURL string) (*ListTeamsResult
 		return nil, err
 	}
 
-	req, err := msgraph_api.NewGraphRequest(ctx, http.MethodGet, pageURL, token, nil)
+	// Pagination URLs from @odata.nextLink also require ConsistencyLevel: eventual for advanced-query pages
+	req, err := msgraph_api.NewGraphAdvancedRequest(ctx, http.MethodGet, pageURL, token, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create teams page request: %w", err)
 	}

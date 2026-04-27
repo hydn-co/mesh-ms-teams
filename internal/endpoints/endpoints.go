@@ -7,7 +7,7 @@ const (
 	GraphProvisionUserEndpoint = "https://graph.microsoft.com/v1.0/users"
 
 	// Teams endpoints
-	GraphTeamsListEndpoint = "https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/any(x:x%20eq%20%27Team%27)"
+	GraphTeamsListEndpoint = "https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/any(x:x%20eq%20%27Team%27)&$count=true"
 
 	// Channels endpoints
 	GraphChannelsListEndpoint = "https://graph.microsoft.com/v1.0/teams/{teamId}/channels"

@@ -49,6 +49,21 @@ func EnsureContextActive(ctx context.Context) error {
 // NewGraphRequest creates a new HTTP request for Microsoft Graph API calls.
 // The request includes the Authorization header with the bearer token.
 func NewGraphRequest(ctx context.Context, method, endpoint, token string, payload any) (*http.Request, error) {
+	return newGraphRequest(ctx, method, endpoint, token, payload, false)
+}
+
+// NewGraphAdvancedRequest creates a Graph request with the ConsistencyLevel: eventual header,
+// required for advanced OData queries (lambda operators, $count on directory objects, etc.).
+func NewGraphAdvancedRequest(ctx context.Context, method, endpoint, token string, payload any) (*http.Request, error) {
+	return newGraphRequest(ctx, method, endpoint, token, payload, true)
+}
+
+func newGraphRequest(
+	ctx context.Context,
+	method, endpoint, token string,
+	payload any,
+	advanced bool,
+) (*http.Request, error) {
 	if err := EnsureContextActive(ctx); err != nil {
 		return nil, err
 	}
@@ -70,6 +85,10 @@ func NewGraphRequest(ctx context.Context, method, endpoint, token string, payloa
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	if advanced {
+		// Required for advanced OData filters on directory objects (lambda operators, $search, etc.)
+		req.Header.Set("ConsistencyLevel", "eventual")
+	}
 
 	return req, nil
 }
