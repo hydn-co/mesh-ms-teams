@@ -3,6 +3,7 @@ package collectors
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
 	"github.com/hydn-co/mesh-ms-teams/internal/helpers"
@@ -24,7 +25,9 @@ type TeamsCollector struct {
 }
 
 // NewTeamsCollector constructs a TeamsCollector.
-func NewTeamsCollector(ctx *connector.TypedFeatureContext[*options.TeamsCollectorOptions, *connector.NoPayload]) runner.Feature {
+func NewTeamsCollector(
+	ctx *connector.TypedFeatureContext[*options.TeamsCollectorOptions, *connector.NoPayload],
+) runner.Feature {
 	return &TeamsCollector{TypedFeatureContext: ctx}
 }
 
@@ -36,11 +39,13 @@ func (c *TeamsCollector) Init(ctx context.Context) error {
 
 	creds, err := credentials.ParseCredentials(c.GetCredentials())
 	if err != nil {
+		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
 	token, err := creds.GetAccessToken(ctx)
 	if err != nil {
+		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to acquire access token", "error", err)
 		return fmt.Errorf("failed to acquire access token: %w", err)
 	}
 
@@ -75,6 +80,7 @@ func (c *TeamsCollector) Start(ctx context.Context) error {
 		}
 
 		if err != nil {
+			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list teams", "error", err)
 			return fmt.Errorf("failed to list teams: %w", err)
 		}
 
@@ -87,6 +93,7 @@ func (c *TeamsCollector) Start(ctx context.Context) error {
 			}
 
 			if err := c.Emit(ctx, groupEntity); err != nil {
+				logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to emit team", "team_id", team.ID, "error", err)
 				return fmt.Errorf("failed to emit team %s: %w", team.ID, err)
 			}
 		}

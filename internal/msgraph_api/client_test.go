@@ -65,7 +65,13 @@ func TestShouldHaveBodyWhenNewGraphRequestWithPayload(t *testing.T) {
 	payload := map[string]string{"key": "value"}
 
 	// Act
-	req, err := msgraph_api.NewGraphRequest(context.Background(), http.MethodPost, "https://example.com", "token", payload)
+	req, err := msgraph_api.NewGraphRequest(
+		context.Background(),
+		http.MethodPost,
+		"https://example.com",
+		"token",
+		payload,
+	)
 
 	// Assert
 	require.NoError(t, err)

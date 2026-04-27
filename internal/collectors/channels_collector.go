@@ -3,6 +3,7 @@ package collectors
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/hydn-co/mesh-ms-teams/internal/channels"
 	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
@@ -25,7 +26,9 @@ type ChannelsCollector struct {
 }
 
 // NewChannelsCollector constructs a ChannelsCollector.
-func NewChannelsCollector(ctx *connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload]) runner.Feature {
+func NewChannelsCollector(
+	ctx *connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload],
+) runner.Feature {
 	return &ChannelsCollector{TypedFeatureContext: ctx}
 }
 
@@ -37,16 +40,19 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 
 	opts := c.GetOptions()
 	if opts == nil || opts.TeamID == "" {
+		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "team_id is required in options")
 		return fmt.Errorf("team_id is required in options")
 	}
 
 	creds, err := credentials.ParseCredentials(c.GetCredentials())
 	if err != nil {
+		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
 	token, err := creds.GetAccessToken(ctx)
 	if err != nil {
+		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to acquire access token", "error", err)
 		return fmt.Errorf("failed to acquire access token: %w", err)
 	}
 
@@ -82,6 +88,7 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		}
 
 		if err != nil {
+			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list channels", "error", err)
 			return fmt.Errorf("failed to list channels: %w", err)
 		}
 
@@ -94,6 +101,7 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 			}
 
 			if err := c.Emit(ctx, channelEntity); err != nil {
+				logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to emit channel", "channel_id", channel.ID, "error", err)
 				return fmt.Errorf("failed to emit channel %s: %w", channel.ID, err)
 			}
 		}
