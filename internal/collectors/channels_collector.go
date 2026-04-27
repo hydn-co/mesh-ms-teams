@@ -101,7 +101,8 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 			}
 
 			if err := c.Emit(ctx, channelEntity); err != nil {
-				logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to emit channel", "channel_id", channel.ID, "error", err)
+				logCollector(ctx, c.TypedFeatureContext, slog.LevelError,
+					"failed to emit channel", "channel_id", channel.ID, "error", err)
 				return fmt.Errorf("failed to emit channel %s: %w", channel.ID, err)
 			}
 		}

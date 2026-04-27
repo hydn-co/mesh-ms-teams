@@ -86,7 +86,9 @@ func (c *AzureADCredentials) GetAccessTokenFromURL(ctx context.Context, tokenURL
 	if err != nil {
 		return "", fmt.Errorf("token request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {

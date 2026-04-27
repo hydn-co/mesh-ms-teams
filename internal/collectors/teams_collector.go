@@ -93,7 +93,8 @@ func (c *TeamsCollector) Start(ctx context.Context) error {
 			}
 
 			if err := c.Emit(ctx, groupEntity); err != nil {
-				logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to emit team", "team_id", team.ID, "error", err)
+				logCollector(ctx, c.TypedFeatureContext, slog.LevelError,
+					"failed to emit team", "team_id", team.ID, "error", err)
 				return fmt.Errorf("failed to emit team %s: %w", team.ID, err)
 			}
 		}

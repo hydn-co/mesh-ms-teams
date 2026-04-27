@@ -91,7 +91,6 @@ func Do(req *http.Request, response any) error {
 		}
 
 		body, closeErr, readErr := readResponseBody(req.Context(), resp)
-		defer resp.Body.Close()
 
 		if closeErr != nil {
 			return fmt.Errorf("failed to close response body: %w", closeErr)
@@ -179,7 +178,8 @@ func parseErrorResponse(statusCode int, body []byte) error {
 		description = desc
 	}
 
-	return fmt.Errorf("Microsoft Graph API error [%s]: %s (status %d)", errResp.Error.Code, description, statusCode)
+	return fmt.Errorf("microsoft Graph API error [%s]: %s (status %d)",
+		errResp.Error.Code, description, statusCode)
 }
 
 // BuildURL constructs a Microsoft Graph API URL with query parameters.
