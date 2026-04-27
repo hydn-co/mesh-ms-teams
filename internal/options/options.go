@@ -11,8 +11,21 @@ func init() {
 	polymorphic.RegisterType[SendMessageActionOptions]()
 }
 
+// TeamsOptionsCore contains common fields shared by all Teams feature option types.
+type TeamsOptionsCore struct {
+	TenantID string `json:"tenant_id" title:"Azure Tenant ID" description:"The Microsoft Entra tenant ID to authenticate against" binding:"required"`
+}
+
+func (o *TeamsOptionsCore) GetTenantID() string {
+	if o == nil {
+		return ""
+	}
+	return o.TenantID
+}
+
 // TeamsCollectorOptions configures the teams collector.
 type TeamsCollectorOptions struct {
+	TeamsOptionsCore `json:",inline"`
 	// IncludeArchived determines whether to include archived teams in the collection.
 	IncludeArchived bool `json:"include_archived" description:"Include archived teams in collection"`
 }
@@ -30,9 +43,9 @@ func (o *TeamsCollectorOptions) GetRequirements() []string {
 }
 
 // ChannelsCollectorOptions configures the channels collector.
+// Channels are collected across all teams accessible to the service principal.
 type ChannelsCollectorOptions struct {
-	// TeamID is the ID of the team to collect channels from.
-	TeamID string `json:"team_id" binding:"required" description:"Team ID to collect channels from"`
+	TeamsOptionsCore `json:",inline"`
 }
 
 func (o *ChannelsCollectorOptions) GetDiscriminator() string {
@@ -49,6 +62,8 @@ func (o *ChannelsCollectorOptions) GetRequirements() []string {
 
 // SendMessageActionOptions configures the send-message action.
 type SendMessageActionOptions struct {
+	TeamsOptionsCore `json:",inline"`
+
 	// TeamID is the ID of the team containing the target channel.
 	TeamID string `json:"team_id" binding:"required" description:"Team ID containing the target channel"`
 

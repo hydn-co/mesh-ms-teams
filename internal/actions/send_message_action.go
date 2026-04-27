@@ -63,7 +63,7 @@ func (a *SendMessageAction) Init(ctx context.Context) error {
 		return fmt.Errorf("invalid message payload: %w", err)
 	}
 
-	creds, err := credentials.ParseCredentials(a.GetCredentials())
+	creds, err := credentials.ParseCredentials(a.GetCredentials(), opts.TenantID)
 	if err != nil {
 		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
 		return fmt.Errorf("failed to parse credentials: %w", err)

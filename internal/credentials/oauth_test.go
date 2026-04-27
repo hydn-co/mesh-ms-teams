@@ -16,10 +16,10 @@ import (
 
 func TestShouldParseCredentialsWhenValidJSON(t *testing.T) {
 	// Arrange
-	raw := json.RawMessage(`{"tenant_id":"abc123","client_id":"def456","client_secret":"s3cr3t"}`)
+	raw := json.RawMessage(`{"client_id":"def456","client_secret":"s3cr3t"}`)
 
 	// Act
-	creds, err := credentials.ParseCredentials(raw)
+	creds, err := credentials.ParseCredentials(raw, "abc123")
 
 	// Assert
 	require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestShouldReturnErrorWhenCredentialsEmpty(t *testing.T) {
 	raw := json.RawMessage{}
 
 	// Act
-	_, err := credentials.ParseCredentials(raw)
+	_, err := credentials.ParseCredentials(raw, "abc123")
 
 	// Assert
 	assert.ErrorContains(t, err, "no credentials")
@@ -44,7 +44,7 @@ func TestShouldReturnErrorWhenJSONInvalid(t *testing.T) {
 	raw := json.RawMessage(`{not valid json`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw)
+	_, err := credentials.ParseCredentials(raw, "abc123")
 
 	// Assert
 	assert.Error(t, err)
@@ -55,7 +55,7 @@ func TestShouldReturnErrorWhenTenantIDMissing(t *testing.T) {
 	raw := json.RawMessage(`{"client_id":"id","client_secret":"s"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw)
+	_, err := credentials.ParseCredentials(raw, "")
 
 	// Assert
 	assert.ErrorContains(t, err, "tenant_id")
@@ -63,10 +63,10 @@ func TestShouldReturnErrorWhenTenantIDMissing(t *testing.T) {
 
 func TestShouldReturnErrorWhenClientIDMissing(t *testing.T) {
 	// Arrange
-	raw := json.RawMessage(`{"tenant_id":"t1","client_secret":"s"}`)
+	raw := json.RawMessage(`{"client_secret":"s"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw)
+	_, err := credentials.ParseCredentials(raw, "t1")
 
 	// Assert
 	assert.ErrorContains(t, err, "client_id")
@@ -74,10 +74,10 @@ func TestShouldReturnErrorWhenClientIDMissing(t *testing.T) {
 
 func TestShouldReturnErrorWhenClientSecretMissing(t *testing.T) {
 	// Arrange
-	raw := json.RawMessage(`{"tenant_id":"t1","client_id":"id"}`)
+	raw := json.RawMessage(`{"client_id":"id"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw)
+	_, err := credentials.ParseCredentials(raw, "t1")
 
 	// Assert
 	assert.ErrorContains(t, err, "client_secret")

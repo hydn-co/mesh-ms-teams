@@ -25,8 +25,10 @@ type tokenResponse struct {
 	Description string `json:"error_description"`
 }
 
-// ParseCredentials deserializes raw JSON credentials into an AzureADCredentials struct.
-func ParseCredentials(raw json.RawMessage) (*AzureADCredentials, error) {
+// ParseCredentials deserializes client_id and client_secret from raw JSON credentials.
+// The tenantID is supplied from feature options, not from the credentials secret,
+// aligning with the GrantCredential template which only stores client_id and client_secret.
+func ParseCredentials(raw json.RawMessage, tenantID string) (*AzureADCredentials, error) {
 	if len(raw) == 0 {
 		return nil, fmt.Errorf("no credentials provided")
 	}
@@ -35,6 +37,8 @@ func ParseCredentials(raw json.RawMessage) (*AzureADCredentials, error) {
 	if err := json.Unmarshal(raw, &creds); err != nil {
 		return nil, fmt.Errorf("invalid credentials JSON format: %w", err)
 	}
+
+	creds.TenantID = tenantID
 
 	if err := creds.Validate(); err != nil {
 		return nil, err
@@ -46,7 +50,7 @@ func ParseCredentials(raw json.RawMessage) (*AzureADCredentials, error) {
 // Validate ensures all required credential fields are present.
 func (c *AzureADCredentials) Validate() error {
 	if c.TenantID == "" {
-		return fmt.Errorf("missing tenant_id credential field")
+		return fmt.Errorf("missing tenant_id: ensure tenant_id is set in feature options")
 	}
 	if c.ClientID == "" {
 		return fmt.Errorf("missing client_id credential field")

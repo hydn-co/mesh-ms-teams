@@ -37,7 +37,8 @@ func (c *TeamsCollector) Init(ctx context.Context) error {
 		return err
 	}
 
-	creds, err := credentials.ParseCredentials(c.GetCredentials())
+	opts := c.GetOptions()
+	creds, err := credentials.ParseCredentials(c.GetCredentials(), opts.TenantID)
 	if err != nil {
 		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
 		return fmt.Errorf("failed to parse credentials: %w", err)

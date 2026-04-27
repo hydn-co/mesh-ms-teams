@@ -10,6 +10,7 @@ import (
 	"github.com/hydn-co/mesh-ms-teams/internal/helpers"
 	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
+	"github.com/hydn-co/mesh-ms-teams/internal/teams"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/entities"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/types"
@@ -17,11 +18,10 @@ import (
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
 )
 
-// ChannelsCollector collects channels from Microsoft Teams and emits them as catalog entities.
+// ChannelsCollector collects channels across all teams and emits them as catalog entities.
 type ChannelsCollector struct {
 	*connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload]
 	token       string
-	teamID      string
 	initialized bool
 }
 
@@ -32,19 +32,14 @@ func NewChannelsCollector(
 	return &ChannelsCollector{TypedFeatureContext: ctx}
 }
 
-// Init prepares the collector for operation by validating credentials and options.
+// Init prepares the collector for operation by validating credentials.
 func (c *ChannelsCollector) Init(ctx context.Context) error {
 	if err := msgraph_api.EnsureContextActive(ctx); err != nil {
 		return err
 	}
 
 	opts := c.GetOptions()
-	if opts == nil || opts.TeamID == "" {
-		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "team_id is required in options")
-		return fmt.Errorf("team_id is required in options")
-	}
-
-	creds, err := credentials.ParseCredentials(c.GetCredentials())
+	creds, err := credentials.ParseCredentials(c.GetCredentials(), opts.TenantID)
 	if err != nil {
 		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
 		return fmt.Errorf("failed to parse credentials: %w", err)
@@ -57,12 +52,11 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 	}
 
 	c.token = token
-	c.teamID = opts.TeamID
 	c.initialized = true
 	return nil
 }
 
-// Start begins collecting channels from the specified team.
+// Start collects channels across all teams accessible to the service principal.
 func (c *ChannelsCollector) Start(ctx context.Context) error {
 	if err := msgraph_api.EnsureContextActive(ctx); err != nil {
 		return err
@@ -72,7 +66,44 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		return err
 	}
 
-	pageURL := ""
+	teamPageURL := ""
+	for {
+		if err := msgraph_api.EnsureContextActive(ctx); err != nil {
+			return err
+		}
+
+		var teamResult *teams.ListTeamsResult
+		var err error
+
+		if teamPageURL == "" {
+			teamResult, err = teams.ListTeams(ctx, c.token)
+		} else {
+			teamResult, err = teams.ListTeamsPage(ctx, c.token, teamPageURL)
+		}
+
+		if err != nil {
+			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list teams", "error", err)
+			return fmt.Errorf("failed to list teams: %w", err)
+		}
+
+		for _, team := range teamResult.Value {
+			if err := c.collectChannelsForTeam(ctx, team.ID); err != nil {
+				return err
+			}
+		}
+
+		teamPageURL = teamResult.OdataNextLink
+		if teamPageURL == "" {
+			break
+		}
+	}
+
+	return nil
+}
+
+// collectChannelsForTeam fetches and emits all channels for a single team.
+func (c *ChannelsCollector) collectChannelsForTeam(ctx context.Context, teamID string) error {
+	channelPageURL := ""
 	for {
 		if err := msgraph_api.EnsureContextActive(ctx); err != nil {
 			return err
@@ -81,15 +112,16 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		var result *channels.ListChannelsResult
 		var err error
 
-		if pageURL == "" {
-			result, err = channels.ListChannels(ctx, c.token, c.teamID)
+		if channelPageURL == "" {
+			result, err = channels.ListChannels(ctx, c.token, teamID)
 		} else {
-			result, err = channels.ListChannelsPage(ctx, c.token, pageURL)
+			result, err = channels.ListChannelsPage(ctx, c.token, channelPageURL)
 		}
 
 		if err != nil {
-			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list channels", "error", err)
-			return fmt.Errorf("failed to list channels: %w", err)
+			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list channels",
+				"team_id", teamID, "error", err)
+			return fmt.Errorf("failed to list channels for team %s: %w", teamID, err)
 		}
 
 		for _, channel := range result.Value {
@@ -102,13 +134,13 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 
 			if err := c.Emit(ctx, channelEntity); err != nil {
 				logCollector(ctx, c.TypedFeatureContext, slog.LevelError,
-					"failed to emit channel", "channel_id", channel.ID, "error", err)
+					"failed to emit channel", "team_id", teamID, "channel_id", channel.ID, "error", err)
 				return fmt.Errorf("failed to emit channel %s: %w", channel.ID, err)
 			}
 		}
 
-		pageURL = result.OdataNextLink
-		if pageURL == "" {
+		channelPageURL = result.OdataNextLink
+		if channelPageURL == "" {
 			break
 		}
 	}
@@ -128,6 +160,5 @@ func (c *ChannelsCollector) Stop(ctx context.Context) error {
 
 	c.initialized = false
 	c.token = ""
-	c.teamID = ""
 	return nil
 }
