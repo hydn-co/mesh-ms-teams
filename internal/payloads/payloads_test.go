@@ -82,3 +82,75 @@ func TestShouldValidateSuccessfullyWhenMessageIsAtMaxLength(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 }
+
+func TestShouldReturnDiscriminatorWhenProvisionUserPayloadGetDiscriminator(t *testing.T) {
+	// Arrange
+	p := &payloads.ProvisionUserPayload{}
+
+	// Act
+	discriminator := p.GetDiscriminator()
+
+	// Assert
+	assert.NotEmpty(t, discriminator)
+}
+
+func TestShouldValidateSuccessfullyWhenProvisionUserPayloadIsValid(t *testing.T) {
+	// Arrange
+	p := &payloads.ProvisionUserPayload{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		MailNickname:      "testuser",
+		Password:          "P@ssw0rd!",
+	}
+
+	// Act
+	err := p.Validate()
+
+	// Assert
+	require.NoError(t, err)
+}
+
+func TestShouldReturnErrorWhenDisplayNameIsEmpty(t *testing.T) {
+	// Arrange
+	p := &payloads.ProvisionUserPayload{
+		UserPrincipalName: "testuser@example.com",
+		MailNickname:      "testuser",
+		Password:          "P@ssw0rd!",
+	}
+
+	// Act
+	err := p.Validate()
+
+	// Assert
+	assert.ErrorContains(t, err, "display_name")
+}
+
+func TestShouldReturnErrorWhenUserPrincipalNameIsEmpty(t *testing.T) {
+	// Arrange
+	p := &payloads.ProvisionUserPayload{
+		DisplayName:  "Test User",
+		MailNickname: "testuser",
+		Password:     "P@ssw0rd!",
+	}
+
+	// Act
+	err := p.Validate()
+
+	// Assert
+	assert.ErrorContains(t, err, "user_principal_name")
+}
+
+func TestShouldReturnErrorWhenPasswordIsEmpty(t *testing.T) {
+	// Arrange
+	p := &payloads.ProvisionUserPayload{
+		DisplayName:       "Test User",
+		UserPrincipalName: "testuser@example.com",
+		MailNickname:      "testuser",
+	}
+
+	// Act
+	err := p.Validate()
+
+	// Assert
+	assert.ErrorContains(t, err, "password")
+}

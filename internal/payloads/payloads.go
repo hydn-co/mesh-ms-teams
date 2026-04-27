@@ -10,6 +10,7 @@ import (
 
 func init() {
 	polymorphic.RegisterType[SendMessagePayload]()
+	polymorphic.RegisterType[ProvisionUserPayload]()
 }
 
 // SendMessagePayload is the action payload schema for sending a message to a Teams channel.
@@ -41,5 +42,41 @@ func (p *SendMessagePayload) Validate() error {
 		return fmt.Errorf("message contains invalid UTF-8")
 	}
 
+	return nil
+}
+
+// ProvisionUserPayload is the action payload schema for provisioning a new user in Microsoft Teams.
+type ProvisionUserPayload struct {
+	// DisplayName is the display name for the new user.
+	DisplayName string `json:"display_name" binding:"required" description:"Display name for the new user"`
+
+	// UserPrincipalName is the user principal name (UPN) for the new account, e.g. user@domain.com.
+	UserPrincipalName string `json:"user_principal_name" binding:"required" description:"User principal name (UPN) for the new account"`
+
+	// MailNickname is the mail alias for the new user.
+	MailNickname string `json:"mail_nickname" binding:"required" description:"Mail alias for the new user"`
+
+	// Password is the initial password for the new account.
+	Password string `json:"password" binding:"required" description:"Initial password for the new account"`
+}
+
+func (p *ProvisionUserPayload) GetDiscriminator() string {
+	return "mesh://ms-teams/payloads/provision-user"
+}
+
+// Validate ensures the provision-user payload is valid.
+func (p *ProvisionUserPayload) Validate() error {
+	if strings.TrimSpace(p.DisplayName) == "" {
+		return fmt.Errorf("display_name cannot be empty")
+	}
+	if strings.TrimSpace(p.UserPrincipalName) == "" {
+		return fmt.Errorf("user_principal_name cannot be empty")
+	}
+	if strings.TrimSpace(p.MailNickname) == "" {
+		return fmt.Errorf("mail_nickname cannot be empty")
+	}
+	if strings.TrimSpace(p.Password) == "" {
+		return fmt.Errorf("password cannot be empty")
+	}
 	return nil
 }
