@@ -9,7 +9,7 @@ emit catalog entities, and perform actions on Microsoft Teams via the Microsoft 
 ### `teams_collector`
 
 Collects all teams accessible to the service principal and emits them as catalog Group
-entities in the `activity` space. Supports pagination via `@odata.nextLink`.
+entities in the `groups` space. Supports pagination via `@odata.nextLink`.
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
@@ -18,7 +18,7 @@ entities in the `activity` space. Supports pagination via `@odata.nextLink`.
 ### `channels_collector`
 
 Collects channels from a specified team and emits them as catalog Channel entities in the
-`activity` space.
+`channels` space.
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|

@@ -10,11 +10,9 @@ import (
 func TestShouldHaveUniqueDiscriminators(t *testing.T) {
 	// Arrange
 	discriminators := []string{
-		(&options.UsersCollectorOptions{}).GetDiscriminator(),
 		(&options.TeamsCollectorOptions{}).GetDiscriminator(),
 		(&options.ChannelsCollectorOptions{}).GetDiscriminator(),
 		(&options.SendMessageActionOptions{}).GetDiscriminator(),
-		(&options.ProvisionUserActionOptions{}).GetDiscriminator(),
 	}
 
 	// Act
@@ -25,17 +23,6 @@ func TestShouldHaveUniqueDiscriminators(t *testing.T) {
 		assert.False(t, seen[d], "duplicate discriminator: %s", d)
 		seen[d] = true
 	}
-}
-
-func TestShouldReturnAccountsSpaceWhenUsersCollectorOptionsGetSpaces(t *testing.T) {
-	// Arrange
-	opts := &options.UsersCollectorOptions{}
-
-	// Act
-	spaces := opts.GetSpaces()
-
-	// Assert
-	assert.Contains(t, spaces, "accounts")
 }
 
 func TestShouldReturnGroupsSpaceWhenTeamsCollectorOptionsGetSpaces(t *testing.T) {
@@ -71,28 +58,6 @@ func TestShouldReturnChannelsSpaceWhenSendMessageActionOptionsGetSpaces(t *testi
 	assert.Contains(t, spaces, "channels")
 }
 
-func TestShouldReturnAccountsSpaceWhenProvisionUserActionOptionsGetSpaces(t *testing.T) {
-	// Arrange
-	opts := &options.ProvisionUserActionOptions{}
-
-	// Act
-	spaces := opts.GetSpaces()
-
-	// Assert
-	assert.Contains(t, spaces, "accounts")
-}
-
-func TestShouldReturnRequirementsWhenUsersCollectorOptionsGetRequirements(t *testing.T) {
-	// Arrange
-	opts := &options.UsersCollectorOptions{}
-
-	// Act
-	reqs := opts.GetRequirements()
-
-	// Assert
-	assert.NotEmpty(t, reqs)
-}
-
 func TestShouldReturnRequirementsWhenTeamsCollectorOptionsGetRequirements(t *testing.T) {
 	// Arrange
 	opts := &options.TeamsCollectorOptions{}
@@ -118,17 +83,6 @@ func TestShouldReturnRequirementsWhenChannelsCollectorOptionsGetRequirements(t *
 func TestShouldReturnRequirementsWhenSendMessageActionOptionsGetRequirements(t *testing.T) {
 	// Arrange
 	opts := &options.SendMessageActionOptions{}
-
-	// Act
-	reqs := opts.GetRequirements()
-
-	// Assert
-	assert.NotEmpty(t, reqs)
-}
-
-func TestShouldReturnRequirementsWhenProvisionUserActionOptionsGetRequirements(t *testing.T) {
-	// Arrange
-	opts := &options.ProvisionUserActionOptions{}
 
 	// Act
 	reqs := opts.GetRequirements()

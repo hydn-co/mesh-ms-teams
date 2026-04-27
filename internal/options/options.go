@@ -6,29 +6,9 @@ import (
 )
 
 func init() {
-	polymorphic.RegisterType[UsersCollectorOptions]()
 	polymorphic.RegisterType[TeamsCollectorOptions]()
 	polymorphic.RegisterType[ChannelsCollectorOptions]()
 	polymorphic.RegisterType[SendMessageActionOptions]()
-	polymorphic.RegisterType[ProvisionUserActionOptions]()
-}
-
-// UsersCollectorOptions configures the users collector.
-type UsersCollectorOptions struct {
-	// IncludeGuests determines whether to include guest accounts in the collection.
-	IncludeGuests bool `json:"include_guests" description:"Include guest accounts in collection"`
-}
-
-func (o *UsersCollectorOptions) GetDiscriminator() string {
-	return "mesh://ms-teams/collectors/users/options"
-}
-
-func (o *UsersCollectorOptions) GetSpaces() []spaces.Space {
-	return []spaces.Space{spaces.Accounts}
-}
-
-func (o *UsersCollectorOptions) GetRequirements() []string {
-	return []string{"users"}
 }
 
 // TeamsCollectorOptions configures the teams collector.
@@ -86,19 +66,4 @@ func (o *SendMessageActionOptions) GetSpaces() []spaces.Space {
 
 func (o *SendMessageActionOptions) GetRequirements() []string {
 	return []string{"teams"}
-}
-
-// ProvisionUserActionOptions configures the provision-user action.
-type ProvisionUserActionOptions struct{}
-
-func (o *ProvisionUserActionOptions) GetDiscriminator() string {
-	return "mesh://ms-teams/actions/provision-user/options"
-}
-
-func (o *ProvisionUserActionOptions) GetSpaces() []spaces.Space {
-	return []spaces.Space{spaces.Accounts}
-}
-
-func (o *ProvisionUserActionOptions) GetRequirements() []string {
-	return []string{"users"}
 }

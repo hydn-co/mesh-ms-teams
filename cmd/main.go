@@ -22,22 +22,6 @@ func WithManifest() *runner.Manifest {
 		"Mesh integration with Microsoft Teams via Microsoft Graph API",
 	)
 
-	// Register Users Collector
-	if err := manifest.RegisterFeature(
-		"users_collector",
-		"Users Collector",
-		"Collects users from Microsoft Teams and emits them as catalog entities.",
-		true,
-		runner.FeatureTypeCollector,
-		new(options.UsersCollectorOptions),
-		nil,
-		runner.FeatureResumeBehaviorLastActivity,
-		runner.ClientCredential,
-		runner.Factory(collectors.NewUsersCollector),
-	); err != nil {
-		log.Fatal(err)
-	}
-
 	// Register Teams Collector
 	if err := manifest.RegisterFeature(
 		"teams_collector",
@@ -82,22 +66,6 @@ func WithManifest() *runner.Manifest {
 		runner.FeatureResumeBehaviorNone,
 		runner.ClientCredential,
 		runner.Factory(actions.NewSendMessageAction),
-	); err != nil {
-		log.Fatal(err)
-	}
-
-	// Register Provision User Action
-	if err := manifest.RegisterFeature(
-		"provision_user_action",
-		"Provision User Action",
-		"Provisions a new user in Entra ID for Microsoft Teams.",
-		false,
-		runner.FeatureTypeAction,
-		new(options.ProvisionUserActionOptions),
-		new(payloads.ProvisionUserPayload),
-		runner.FeatureResumeBehaviorNone,
-		runner.ClientCredential,
-		runner.Factory(actions.NewProvisionUserAction),
 	); err != nil {
 		log.Fatal(err)
 	}

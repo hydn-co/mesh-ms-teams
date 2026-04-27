@@ -23,8 +23,8 @@ type ListTeamsResult struct {
 	OdataNextLink string      `json:"@odata.nextLink"`
 }
 
-// ListTeams retrieves all teams accessible to the service principal from Microsoft Graph.
-// It handles pagination via @odata.nextLink and returns results.
+// ListTeams retrieves the first page of teams accessible to the service principal
+// from Microsoft Graph. Use ListTeamsPage with the returned OdataNextLink to paginate.
 func ListTeams(ctx context.Context, token string) (*ListTeamsResult, error) {
 	if err := msgraph_api.EnsureContextActive(ctx); err != nil {
 		return nil, err

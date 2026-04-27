@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -103,7 +103,7 @@ func Do(req *http.Request, response any) error {
 		// Handle rate limiting (429 Too Many Requests)
 		if resp.StatusCode == http.StatusTooManyRequests {
 			if attempt < maxRateLimitRetries {
-				retryAfter := getRetryAfter(resp.Header)
+				retryAfter := getRetryAfter(resp.Header, attempt)
 				select {
 				case <-time.After(retryAfter):
 					continue
@@ -136,30 +136,33 @@ func doRequestAttempt(req *http.Request) (*http.Response, error) {
 	return client.Do(req)
 }
 
-// readResponseBody reads and returns the response body.
+// readResponseBody reads the response body and closes it.
 func readResponseBody(ctx context.Context, resp *http.Response) ([]byte, error, error) {
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	if err := EnsureContextActive(ctx); err != nil {
-		return nil, resp.Body.Close(), err
+		return nil, nil, err
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, resp.Body.Close(), fmt.Errorf("failed to read body: %w", err)
+		return nil, nil, fmt.Errorf("failed to read body: %w", err)
 	}
 
 	return body, nil, nil
 }
 
 // getRetryAfter extracts the retry-after duration from response headers.
-// Defaults to exponential backoff based on attempt count.
-func getRetryAfter(headers http.Header) time.Duration {
+// Falls back to exponential backoff based on attempt: 1s → 2s → 4s → 8s → 16s.
+func getRetryAfter(headers http.Header, attempt int) time.Duration {
 	if retryAfter := headers.Get("Retry-After"); retryAfter != "" {
 		if seconds, err := strconv.Atoi(retryAfter); err == nil {
 			return time.Duration(seconds) * time.Second
 		}
 	}
-	// Exponential backoff: 1s → 2s → 4s → 8s → 16s
-	return time.Duration(1<<(uint(2))) * time.Second // Default to 4s
+	return time.Duration(1<<uint(attempt)) * time.Second
 }
 
 // parseErrorResponse converts an API error response into a descriptive error.
@@ -182,16 +185,16 @@ func parseErrorResponse(statusCode int, body []byte) error {
 		errResp.Error.Code, description, statusCode)
 }
 
-// BuildURL constructs a Microsoft Graph API URL with query parameters.
+// BuildURL constructs a Microsoft Graph API URL with properly URL-encoded query parameters.
 func BuildURL(endpoint string, params map[string]string) string {
 	if len(params) == 0 {
 		return endpoint
 	}
 
-	var query []string
+	query := url.Values{}
 	for key, value := range params {
-		query = append(query, fmt.Sprintf("$%s=%s", key, value))
+		query.Set("$"+key, value)
 	}
 
-	return endpoint + "?" + strings.Join(query, "&")
+	return endpoint + "?" + query.Encode()
 }
