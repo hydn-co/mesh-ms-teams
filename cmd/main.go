@@ -19,7 +19,7 @@ func WithManifest() *runner.Manifest {
 		"mesh-ms-teams",
 		"",
 		"Microsoft Teams",
-		"Mesh integration with Microsoft Teams via Microsoft Graph API",
+		"Mesh integration with Microsoft Teams",
 	)
 
 	// Register Teams Collector
@@ -32,7 +32,7 @@ func WithManifest() *runner.Manifest {
 		new(options.TeamsCollectorOptions),
 		nil,
 		runner.FeatureResumeBehaviorLastActivity,
-		runner.ClientCredential,
+		runner.GrantCredential,
 		runner.Factory(collectors.NewTeamsCollector),
 	); err != nil {
 		log.Fatal(err)
@@ -48,7 +48,7 @@ func WithManifest() *runner.Manifest {
 		new(options.ChannelsCollectorOptions),
 		nil,
 		runner.FeatureResumeBehaviorLastActivity,
-		runner.ClientCredential,
+		runner.GrantCredential,
 		runner.Factory(collectors.NewChannelsCollector),
 	); err != nil {
 		log.Fatal(err)
@@ -64,7 +64,7 @@ func WithManifest() *runner.Manifest {
 		new(options.SendMessageActionOptions),
 		new(payloads.SendMessagePayload),
 		runner.FeatureResumeBehaviorNone,
-		runner.ClientCredential,
+		runner.GrantCredential,
 		runner.Factory(actions.NewSendMessageAction),
 	); err != nil {
 		log.Fatal(err)
