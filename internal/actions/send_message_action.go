@@ -13,6 +13,7 @@ import (
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
 )
 
@@ -40,38 +41,52 @@ func (a *SendMessageAction) Init(ctx context.Context) error {
 
 	opts := a.GetOptions()
 	if opts == nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "options are required")
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "options are required")
 		return fmt.Errorf("options are required")
 	}
 	if opts.TeamID == "" {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "team_id is required in options")
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "team_id is required in options")
 		return fmt.Errorf("team_id is required in options")
 	}
 	if opts.ChannelID == "" {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "channel_id is required in options")
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "channel_id is required in options")
 		return fmt.Errorf("channel_id is required in options")
 	}
 
 	payload := a.GetPayload()
 	if payload == nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
 		return fmt.Errorf("message payload is required")
 	}
 
 	if err := payload.Validate(); err != nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message payload", "error", err)
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message payload", "error", err)
 		return fmt.Errorf("invalid message payload: %w", err)
 	}
 
 	creds, err := credentials.ParseCredentials(a.GetCredentials(), opts.TenantID)
 	if err != nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
+		connectorutil.LogFeature(
+			ctx,
+			a.TypedFeatureContext,
+			slog.LevelError,
+			"failed to parse credentials",
+			"error",
+			err,
+		)
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
 	token, err := creds.GetAccessToken(ctx)
 	if err != nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "failed to acquire access token", "error", err)
+		connectorutil.LogFeature(
+			ctx,
+			a.TypedFeatureContext,
+			slog.LevelError,
+			"failed to acquire access token",
+			"error",
+			err,
+		)
 		return fmt.Errorf("failed to acquire access token: %w", err)
 	}
 
@@ -95,20 +110,20 @@ func (a *SendMessageAction) Start(ctx context.Context) error {
 
 	payload := a.GetPayload()
 	if payload == nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
 		return fmt.Errorf("message payload is required")
 	}
 
 	// Validate message again at runtime
 	if err := payload.Validate(); err != nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message", "error", err)
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message", "error", err)
 		return fmt.Errorf("invalid message: %w", err)
 	}
 
 	message := strings.TrimSpace(payload.Message)
 
 	if err := channels.SendMessage(ctx, a.token, a.teamID, a.channelID, message); err != nil {
-		logAction(ctx, a.TypedFeatureContext, slog.LevelError, "failed to send message", "error", err)
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "failed to send message", "error", err)
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/types"
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
 )
 
@@ -41,13 +42,27 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 	opts := c.GetOptions()
 	creds, err := credentials.ParseCredentials(c.GetCredentials(), opts.TenantID)
 	if err != nil {
-		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to parse credentials", "error", err)
+		connectorutil.LogFeature(
+			ctx,
+			c.TypedFeatureContext,
+			slog.LevelError,
+			"failed to parse credentials",
+			"error",
+			err,
+		)
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
 	token, err := creds.GetAccessToken(ctx)
 	if err != nil {
-		logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to acquire access token", "error", err)
+		connectorutil.LogFeature(
+			ctx,
+			c.TypedFeatureContext,
+			slog.LevelError,
+			"failed to acquire access token",
+			"error",
+			err,
+		)
 		return fmt.Errorf("failed to acquire access token: %w", err)
 	}
 
@@ -82,7 +97,7 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		}
 
 		if err != nil {
-			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list teams", "error", err)
+			connectorutil.LogFeature(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list teams", "error", err)
 			return fmt.Errorf("failed to list teams: %w", err)
 		}
 
@@ -119,7 +134,7 @@ func (c *ChannelsCollector) collectChannelsForTeam(ctx context.Context, teamID s
 		}
 
 		if err != nil {
-			logCollector(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list channels",
+			connectorutil.LogFeature(ctx, c.TypedFeatureContext, slog.LevelError, "failed to list channels",
 				"team_id", teamID, "error", err)
 			return fmt.Errorf("failed to list channels for team %s: %w", teamID, err)
 		}
@@ -133,7 +148,7 @@ func (c *ChannelsCollector) collectChannelsForTeam(ctx context.Context, teamID s
 			}
 
 			if err := c.Emit(ctx, channelEntity); err != nil {
-				logCollector(ctx, c.TypedFeatureContext, slog.LevelError,
+				connectorutil.LogFeature(ctx, c.TypedFeatureContext, slog.LevelError,
 					"failed to emit channel", "team_id", teamID, "channel_id", channel.ID, "error", err)
 				return fmt.Errorf("failed to emit channel %s: %w", channel.ID, err)
 			}
