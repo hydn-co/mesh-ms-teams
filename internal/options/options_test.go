@@ -5,24 +5,25 @@ import (
 
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestShouldHaveUniqueDiscriminators(t *testing.T) {
-	// Arrange
-	discriminators := []string{
+func TestShouldReturnExpectedDiscriminators(t *testing.T) {
+	assert.Equal(
+		t,
+		"mesh://ms-teams/collectors/ms_teams_teams_collector_options",
 		(&options.TeamsCollectorOptions{}).GetDiscriminator(),
+	)
+	assert.Equal(
+		t,
+		"mesh://ms-teams/collectors/ms_teams_channels_collector_options",
 		(&options.ChannelsCollectorOptions{}).GetDiscriminator(),
+	)
+	assert.Equal(
+		t,
+		"mesh://ms-teams/actions/ms_teams_send_message_action_options",
 		(&options.SendMessageActionOptions{}).GetDiscriminator(),
-	}
-
-	// Act
-	seen := make(map[string]bool)
-	for _, d := range discriminators {
-		// Assert
-		assert.NotEmpty(t, d)
-		assert.False(t, seen[d], "duplicate discriminator: %s", d)
-		seen[d] = true
-	}
+	)
 }
 
 func TestShouldReturnGroupsSpaceWhenTeamsCollectorOptionsGetSpaces(t *testing.T) {
@@ -89,4 +90,46 @@ func TestShouldReturnRequirementsWhenSendMessageActionOptionsGetRequirements(t *
 
 	// Assert
 	assert.NotEmpty(t, reqs)
+}
+
+func TestShouldValidateTeamsCollectorOptionsWhenTenantIDPresent(t *testing.T) {
+	opts := &options.TeamsCollectorOptions{
+		TeamsOptionsCore: options.TeamsOptionsCore{TenantID: "  tenant-id  "},
+	}
+
+	require.NoError(t, opts.Validate())
+	assert.Equal(t, "tenant-id", opts.TenantID)
+}
+
+func TestShouldReturnErrorWhenTeamsCollectorOptionsMissingTenantID(t *testing.T) {
+	err := (&options.TeamsCollectorOptions{}).Validate()
+
+	require.Error(t, err)
+	assert.EqualError(t, err, "tenant_id is required")
+}
+
+func TestShouldValidateAndTrimSendMessageActionOptions(t *testing.T) {
+	opts := &options.SendMessageActionOptions{
+		TeamsOptionsCore: options.TeamsOptionsCore{TenantID: " tenant-id "},
+		TeamID:           " team-id ",
+		ChannelID:        " channel-id ",
+	}
+
+	require.NoError(t, opts.Validate())
+	assert.Equal(t, "tenant-id", opts.TenantID)
+	assert.Equal(t, "team-id", opts.TeamID)
+	assert.Equal(t, "channel-id", opts.ChannelID)
+	assert.Contains(t, opts.GetRequirements(), "teams")
+}
+
+func TestShouldReturnErrorWhenSendMessageActionOptionsMissingChannelID(t *testing.T) {
+	opts := &options.SendMessageActionOptions{
+		TeamsOptionsCore: options.TeamsOptionsCore{TenantID: "tenant-id"},
+		TeamID:           "team-id",
+	}
+
+	err := opts.Validate()
+
+	require.Error(t, err)
+	assert.EqualError(t, err, "channel_id is required")
 }

@@ -15,11 +15,11 @@ func init() {
 // SendMessagePayload is the action payload schema for sending a message to a Teams channel.
 type SendMessagePayload struct {
 	// Message is the content of the message to send.
-	Message string `json:"message" binding:"required" description:"Message content to send"`
+	Message string `json:"message" binding:"required" title:"Message" description:"Message body to post to the target Microsoft Teams channel. Maximum 4000 characters."`
 }
 
 func (p *SendMessagePayload) GetDiscriminator() string {
-	return "mesh://ms-teams/payloads/send-message"
+	return "mesh://ms-teams/actions/ms_teams_send_message_action_payload"
 }
 
 // Validate ensures the message payload is valid.
@@ -41,6 +41,8 @@ func (p *SendMessagePayload) Validate() error {
 	if !utf8.ValidString(trimmed) {
 		return fmt.Errorf("message contains invalid UTF-8")
 	}
+
+	p.Message = trimmed
 
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hydn-co/mesh-ms-teams/internal/channels"
 	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
-	"github.com/hydn-co/mesh-ms-teams/internal/helpers"
 	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/hydn-co/mesh-ms-teams/internal/teams"
@@ -22,8 +21,8 @@ import (
 // ChannelsCollector collects channels across all teams and emits them as catalog entities.
 type ChannelsCollector struct {
 	*connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload]
-	token       string
-	initialized bool
+	token string
+	state connectorutil.FeatureState
 }
 
 // NewChannelsCollector constructs a ChannelsCollector.
@@ -40,6 +39,11 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 	}
 
 	opts := c.GetOptions()
+	if err := connectorutil.Validate(opts, "feature options"); err != nil {
+		connectorutil.LogFeature(ctx, c.TypedFeatureContext, slog.LevelError, err.Error())
+		return err
+	}
+
 	creds, err := credentials.ParseCredentials(c.GetCredentials(), opts.TenantID)
 	if err != nil {
 		connectorutil.LogFeature(
@@ -67,7 +71,7 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 	}
 
 	c.token = token
-	c.initialized = true
+	c.state.MarkReady()
 	return nil
 }
 
@@ -77,7 +81,7 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := helpers.CheckInitialized(c.initialized); err != nil {
+	if err := c.state.RequireReady(); err != nil {
 		return err
 	}
 
@@ -169,11 +173,11 @@ func (c *ChannelsCollector) Stop(ctx context.Context) error {
 		return err
 	}
 
-	if err := helpers.CheckInitialized(c.initialized); err != nil {
+	if err := c.state.RequireReady(); err != nil {
 		return err
 	}
 
-	c.initialized = false
+	c.state.Reset()
 	c.token = ""
 	return nil
 }

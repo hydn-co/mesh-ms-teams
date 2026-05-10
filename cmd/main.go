@@ -25,9 +25,9 @@ func WithManifest() *runner.Manifest {
 
 	// Register Teams Collector
 	manifest.MustRegisterFeature(
-		"teams_collector",
-		"Teams Collector",
-		"Collects teams from Microsoft Teams and emits them as catalog entities.",
+		"ms_teams_teams_collector",
+		"Collect Teams",
+		"Collects teams and emits them as group catalog entities.",
 		runner.FeatureSchedulable,
 		runner.FeatureTypeCollector,
 		new(options.TeamsCollectorOptions),
@@ -39,9 +39,9 @@ func WithManifest() *runner.Manifest {
 
 	// Register Channels Collector
 	manifest.MustRegisterFeature(
-		"channels_collector",
-		"Channels Collector",
-		"Collects channels from a specified Microsoft Teams team and emits them as catalog entities.",
+		"ms_teams_channels_collector",
+		"Collect Channels",
+		"Collects channels across all accessible teams and emits them as channel catalog entities.",
 		runner.FeatureSchedulable,
 		runner.FeatureTypeCollector,
 		new(options.ChannelsCollectorOptions),
@@ -53,9 +53,9 @@ func WithManifest() *runner.Manifest {
 
 	// Register Send Message Action
 	manifest.MustRegisterFeature(
-		"send_message_action",
-		"Send Message Action",
-		"Posts messages to Microsoft Teams channels.",
+		"ms_teams_send_message_action",
+		"Send Message",
+		"Posts a message to a Microsoft Teams channel.",
 		runner.FeatureUnschedulable,
 		runner.FeatureTypeAction,
 		new(options.SendMessageActionOptions),

@@ -8,15 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestShouldReturnDiscriminatorWhenSendMessagePayloadGetDiscriminator(t *testing.T) {
-	// Arrange
-	p := &payloads.SendMessagePayload{}
-
-	// Act
-	discriminator := p.GetDiscriminator()
-
-	// Assert
-	assert.NotEmpty(t, discriminator)
+func TestShouldReturnExpectedDiscriminatorWhenSendMessagePayloadGetDiscriminator(t *testing.T) {
+	assert.Equal(
+		t,
+		"mesh://ms-teams/actions/ms_teams_send_message_action_payload",
+		(&payloads.SendMessagePayload{}).GetDiscriminator(),
+	)
 }
 
 func TestShouldValidateSuccessfullyWhenMessageIsValid(t *testing.T) {
@@ -81,4 +78,11 @@ func TestShouldValidateSuccessfullyWhenMessageIsAtMaxLength(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
+}
+
+func TestShouldTrimMessageWhenPayloadIsValid(t *testing.T) {
+	p := &payloads.SendMessagePayload{Message: "  Hello, Teams!  "}
+
+	require.NoError(t, p.Validate())
+	assert.Equal(t, "Hello, Teams!", p.Message)
 }

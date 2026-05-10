@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/hydn-co/mesh-ms-teams/internal/channels"
 	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
-	"github.com/hydn-co/mesh-ms-teams/internal/helpers"
 	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
@@ -20,10 +18,11 @@ import (
 // SendMessageAction posts messages to Microsoft Teams channels.
 type SendMessageAction struct {
 	*connector.TypedFeatureContext[*options.SendMessageActionOptions, *payloads.SendMessagePayload]
-	token       string
-	teamID      string
-	channelID   string
-	initialized bool
+	token     string
+	teamID    string
+	channelID string
+	message   string
+	state     connectorutil.FeatureState
 }
 
 // NewSendMessageAction constructs a SendMessageAction.
@@ -40,28 +39,15 @@ func (a *SendMessageAction) Init(ctx context.Context) error {
 	}
 
 	opts := a.GetOptions()
-	if opts == nil {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "options are required")
-		return fmt.Errorf("options are required")
-	}
-	if opts.TeamID == "" {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "team_id is required in options")
-		return fmt.Errorf("team_id is required in options")
-	}
-	if opts.ChannelID == "" {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "channel_id is required in options")
-		return fmt.Errorf("channel_id is required in options")
+	if err := connectorutil.Validate(opts, "feature options"); err != nil {
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, err.Error())
+		return err
 	}
 
 	payload := a.GetPayload()
-	if payload == nil {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
-		return fmt.Errorf("message payload is required")
-	}
-
-	if err := payload.Validate(); err != nil {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message payload", "error", err)
-		return fmt.Errorf("invalid message payload: %w", err)
+	if err := connectorutil.Validate(payload, "send message payload"); err != nil {
+		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, err.Error())
+		return err
 	}
 
 	creds, err := credentials.ParseCredentials(a.GetCredentials(), opts.TenantID)
@@ -93,7 +79,8 @@ func (a *SendMessageAction) Init(ctx context.Context) error {
 	a.token = token
 	a.teamID = opts.TeamID
 	a.channelID = opts.ChannelID
-	a.initialized = true
+	a.message = payload.Message
+	a.state.MarkReady()
 
 	return nil
 }
@@ -104,25 +91,11 @@ func (a *SendMessageAction) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := helpers.CheckInitialized(a.initialized); err != nil {
+	if err := a.state.RequireReady(); err != nil {
 		return err
 	}
 
-	payload := a.GetPayload()
-	if payload == nil {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "message payload is required")
-		return fmt.Errorf("message payload is required")
-	}
-
-	// Validate message again at runtime
-	if err := payload.Validate(); err != nil {
-		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "invalid message", "error", err)
-		return fmt.Errorf("invalid message: %w", err)
-	}
-
-	message := strings.TrimSpace(payload.Message)
-
-	if err := channels.SendMessage(ctx, a.token, a.teamID, a.channelID, message); err != nil {
+	if err := channels.SendMessage(ctx, a.token, a.teamID, a.channelID, a.message); err != nil {
 		connectorutil.LogFeature(ctx, a.TypedFeatureContext, slog.LevelError, "failed to send message", "error", err)
 		return fmt.Errorf("failed to send message: %w", err)
 	}
@@ -136,14 +109,15 @@ func (a *SendMessageAction) Stop(ctx context.Context) error {
 		return err
 	}
 
-	if err := helpers.CheckInitialized(a.initialized); err != nil {
+	if err := a.state.RequireReady(); err != nil {
 		return err
 	}
 
-	a.initialized = false
+	a.state.Reset()
 	a.token = ""
 	a.teamID = ""
 	a.channelID = ""
+	a.message = ""
 
 	return nil
 }
