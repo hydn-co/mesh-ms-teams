@@ -1,12 +1,14 @@
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/fgrzl/enumerators v1.0.1 h1:wdpTvSkE/p7d3KDyb/SwNZq0m4lDL1uMD8krm+89MHQ=
+github.com/fgrzl/enumerators v1.0.1/go.mod h1:dQ9CmYdpN4NYvjUKRRgb0aJwTbFxkx3zsEH54iQG/Sw=
 github.com/fgrzl/json v1.0.0 h1:ZCTSbZq3077eP/grt+H71TFoI/Ac8TMSgo0nI/gXNFE=
 github.com/fgrzl/json v1.0.0/go.mod h1:8ZdkBL2YZJ2w96e9GHs70TG7omuJLPVclgj/uQSTgq8=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/hydn-co/mesh-sdk v0.2.55 h1:TwGby8gH0dLgH+RRCJ3S6wVvuY3BaijVrV8bfIL7fBQ=
-github.com/hydn-co/mesh-sdk v0.2.55/go.mod h1:SYqDctMkOPovPw82emFXu+XNhz+uolO3RyL8ALOkFjA=
+github.com/hydn-co/mesh-sdk v0.2.64 h1:/v9k4TaU1wgwchxYHUqlTRnJ/l3w3W2qk7p+2EAwgdM=
+github.com/hydn-co/mesh-sdk v0.2.64/go.mod h1:9acCMJ8aPey8dGGt8neVQDq2EDl0zMSPxqq4HnIqSXA=
 github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
