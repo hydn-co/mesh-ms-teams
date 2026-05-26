@@ -19,8 +19,8 @@ type GraphChannel struct {
 
 // ListChannelsResult wraps the list of channels returned from the Microsoft Graph API.
 type ListChannelsResult struct {
-	Value         []GraphChannel `json:"value"`
 	OdataNextLink string         `json:"@odata.nextLink"`
+	Value         []GraphChannel `json:"value"`
 }
 
 // SendMessagePayload represents the payload for sending a message to a channel.

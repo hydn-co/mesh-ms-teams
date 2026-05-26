@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
 )
 
 func TestShouldReturnNilWhenContextIsActive(t *testing.T) {
@@ -80,7 +81,7 @@ func TestShouldHaveBodyWhenNewGraphRequestWithPayload(t *testing.T) {
 
 func TestShouldDecodeBodyWhenDoSucceeds(t *testing.T) {
 	// Arrange
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]string{"key": "value"})
@@ -100,7 +101,7 @@ func TestShouldDecodeBodyWhenDoSucceeds(t *testing.T) {
 
 func TestShouldReturnErrorWhenDo401Response(t *testing.T) {
 	// Arrange
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{
@@ -123,7 +124,7 @@ func TestShouldReturnErrorWhenDo401Response(t *testing.T) {
 
 func TestShouldReturnErrorWhenDo404Response(t *testing.T) {
 	// Arrange
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]string{

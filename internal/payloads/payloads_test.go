@@ -3,9 +3,10 @@ package payloads_test
 import (
 	"testing"
 
-	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
 )
 
 func TestShouldReturnExpectedDiscriminatorWhenSendMessagePayloadGetDiscriminator(t *testing.T) {

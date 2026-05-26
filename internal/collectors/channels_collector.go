@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/hydn-co/mesh-ms-teams/internal/channels"
-	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
-	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
-	"github.com/hydn-co/mesh-ms-teams/internal/options"
-	"github.com/hydn-co/mesh-ms-teams/internal/teams"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/entities"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/types"
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
 	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
+
+	"github.com/hydn-co/mesh-ms-teams/internal/channels"
+	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
+	"github.com/hydn-co/mesh-ms-teams/internal/msgraph_api"
+	"github.com/hydn-co/mesh-ms-teams/internal/options"
+	"github.com/hydn-co/mesh-ms-teams/internal/teams"
 )
 
 // ChannelsCollector collects channels across all teams and emits them as catalog entities.

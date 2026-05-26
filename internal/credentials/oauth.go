@@ -20,9 +20,9 @@ type AzureADCredentials struct {
 
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
 	Error       string `json:"error"`
 	Description string `json:"error_description"`
+	ExpiresIn   int    `json:"expires_in"`
 }
 
 // ParseCredentials deserializes client_id and client_secret from raw JSON credentials.
@@ -71,7 +71,6 @@ func (c *AzureADCredentials) GetAccessToken(ctx context.Context) (string, error)
 // GetAccessTokenFromURL is the testable core of GetAccessToken. It accepts an
 // explicit token endpoint URL, allowing tests to point at a local httptest server.
 func (c *AzureADCredentials) GetAccessTokenFromURL(ctx context.Context, tokenURL string) (string, error) {
-
 	body := url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {c.ClientID},

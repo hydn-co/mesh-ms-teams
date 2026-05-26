@@ -3,12 +3,13 @@ package main
 import (
 	"log"
 
+	"github.com/hydn-co/mesh-sdk/pkg/connector"
+	"github.com/hydn-co/mesh-sdk/pkg/runner"
+
 	"github.com/hydn-co/mesh-ms-teams/internal/actions"
 	"github.com/hydn-co/mesh-ms-teams/internal/collectors"
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
-	"github.com/hydn-co/mesh-sdk/pkg/connector"
-	"github.com/hydn-co/mesh-sdk/pkg/runner"
 )
 
 func main() {

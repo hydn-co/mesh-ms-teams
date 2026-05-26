@@ -116,7 +116,7 @@ func TestShouldReturnAccessTokenWhenOAuthSucceeds(t *testing.T) {
 
 func TestShouldReturnErrorWhenOAuthReturnsAuthError(t *testing.T) {
 	// Arrange
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error":             "invalid_client",
@@ -136,7 +136,7 @@ func TestShouldReturnErrorWhenOAuthReturnsAuthError(t *testing.T) {
 
 func TestShouldReturnErrorWhenOAuthResponseHasNoToken(t *testing.T) {
 	// Arrange
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"expires_in": 3600})
 	}))

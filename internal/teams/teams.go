@@ -19,8 +19,8 @@ type GraphTeam struct {
 
 // ListTeamsResult wraps the list of teams returned from the Microsoft Graph API.
 type ListTeamsResult struct {
-	Value         []GraphTeam `json:"value"`
 	OdataNextLink string      `json:"@odata.nextLink"`
+	Value         []GraphTeam `json:"value"`
 }
 
 // ListTeams retrieves the first page of teams accessible to the service principal

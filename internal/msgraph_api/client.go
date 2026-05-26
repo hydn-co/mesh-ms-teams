@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 )
 
 var graphErrorDescriptions = map[string]string{
@@ -100,53 +103,53 @@ func Do(req *http.Request, response any) error {
 		return err
 	}
 
-	for attempt := 0; attempt <= maxRateLimitRetries; attempt++ {
+	return connectorutil.RetryOperation(req.Context(), connectorutil.RetryPolicy{
+		ShouldRetry: isRateLimitError,
+		BaseDelay:   1 * time.Second,
+		MaxDelay:    60 * time.Second,
+		MaxRetries:  maxRateLimitRetries,
+	}, func(stepCtx context.Context) (connectorutil.RetryOperationResult, error) {
 		resp, err := doRequestAttempt(req)
 		if err != nil {
 			if cerr := req.Context().Err(); cerr != nil {
-				return fmt.Errorf("operation canceled: %w", cerr)
+				return connectorutil.RetryOperationResult{}, fmt.Errorf("operation canceled: %w", cerr)
 			}
-			return fmt.Errorf("API request failed: %w", err)
+			return connectorutil.RetryOperationResult{}, fmt.Errorf("API request failed: %w", err)
 		}
 
-		body, closeErr, readErr := readResponseBody(req.Context(), resp)
+		body, closeErr, readErr := readResponseBody(stepCtx, resp)
 
 		if closeErr != nil {
-			return fmt.Errorf("failed to close response body: %w", closeErr)
+			return connectorutil.RetryOperationResult{}, fmt.Errorf("failed to close response body: %w", closeErr)
 		}
 
 		if readErr != nil {
-			return fmt.Errorf("failed to read response body: %w", readErr)
-		}
-
-		// Handle rate limiting (429 Too Many Requests)
-		if resp.StatusCode == http.StatusTooManyRequests {
-			if attempt < maxRateLimitRetries {
-				retryAfter := getRetryAfter(resp.Header, attempt)
-				select {
-				case <-time.After(retryAfter):
-					continue
-				case <-req.Context().Done():
-					return fmt.Errorf("operation canceled during backoff: %w", req.Context().Err())
-				}
-			}
+			return connectorutil.RetryOperationResult{}, fmt.Errorf("failed to read response body: %w", readErr)
 		}
 
 		// Handle successful response
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			if response != nil && len(body) > 0 {
 				if err := json.Unmarshal(body, response); err != nil {
-					return fmt.Errorf("failed to parse response: %w", err)
+					return connectorutil.RetryOperationResult{}, fmt.Errorf("failed to parse response: %w", err)
 				}
 			}
-			return nil
+			return connectorutil.RetryOperationResult{}, nil
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return connectorutil.RetryOperationResult{
+					RetryAfter: getRetryAfter(resp.Header, 0),
+				}, connectorutil.NewRetryableStatusError(
+					resp.StatusCode,
+					fmt.Sprintf("API request failed with status %d", resp.StatusCode),
+					nil,
+				)
 		}
 
 		// Handle error response
-		return parseErrorResponse(resp.StatusCode, body)
-	}
-
-	return fmt.Errorf("max retry attempts exceeded")
+		return connectorutil.RetryOperationResult{}, parseErrorResponse(resp.StatusCode, body)
+	})
 }
 
 // doRequestAttempt sends a single HTTP request with client timeout.
@@ -182,6 +185,19 @@ func getRetryAfter(headers http.Header, attempt int) time.Duration {
 		}
 	}
 	return time.Duration(1<<uint(attempt)) * time.Second
+}
+
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var statusErr interface{ StatusCode() int }
+	if errors.As(err, &statusErr) {
+		return statusErr.StatusCode() == http.StatusTooManyRequests
+	}
+
+	return false
 }
 
 // parseErrorResponse converts an API error response into a descriptive error.

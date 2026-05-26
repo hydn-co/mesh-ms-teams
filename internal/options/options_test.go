@@ -3,9 +3,10 @@ package options_test
 import (
 	"testing"
 
-	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hydn-co/mesh-ms-teams/internal/options"
 )
 
 func TestShouldReturnExpectedDiscriminators(t *testing.T) {
