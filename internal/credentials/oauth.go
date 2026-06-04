@@ -33,23 +33,25 @@ type tokenResponse struct {
 // stores client_id and client_secret. ms-teams declares a single credential, so the
 // binding lives under connectorutil.DefaultCredentialName.
 func ParseCredentials(credentials map[string]json.RawMessage, tenantID string) (*AzureADCredentials, error) {
-	raw, ok := credentials[connectorutil.DefaultCredentialName]
-	if !ok || len(raw) == 0 {
-		return nil, fmt.Errorf("no credentials provided")
+	clientID, clientSecret, err := connectorutil.ExtractGrantCredentialFrom(
+		credentials,
+		connectorutil.DefaultCredentialName,
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	var creds AzureADCredentials
-	if err := json.Unmarshal(raw, &creds); err != nil {
-		return nil, fmt.Errorf("invalid credentials JSON format: %w", err)
+	creds := &AzureADCredentials{
+		TenantID:     tenantID,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
 	}
-
-	creds.TenantID = tenantID
 
 	if err := creds.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &creds, nil
+	return creds, nil
 }
 
 // Validate ensures all required credential fields are present.

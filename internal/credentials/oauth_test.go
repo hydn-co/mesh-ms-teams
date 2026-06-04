@@ -40,7 +40,7 @@ func TestShouldReturnErrorWhenCredentialsEmpty(t *testing.T) {
 		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "abc123")
 
 	// Assert
-	assert.ErrorContains(t, err, "no credentials")
+	assert.ErrorContains(t, err, "not found")
 }
 
 func TestShouldReturnErrorWhenJSONInvalid(t *testing.T) {
