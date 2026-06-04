@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
 
 	"github.com/hydn-co/mesh-ms-teams/internal/actions"
@@ -11,6 +12,13 @@ import (
 	"github.com/hydn-co/mesh-ms-teams/internal/options"
 	"github.com/hydn-co/mesh-ms-teams/internal/payloads"
 )
+
+// msTeamsCredentials declares the single OAuth grant credential every ms-teams
+// feature uses. The slot is named connectorutil.DefaultCredentialName so bindings
+// created before named credentials existed continue to resolve.
+var msTeamsCredentials = []runner.CredentialRequirement{
+	{Name: connectorutil.DefaultCredentialName, TemplateName: runner.GrantCredential},
+}
 
 func main() {
 	runner.Run(WithManifest())
@@ -34,7 +42,7 @@ func WithManifest() *runner.Manifest {
 		new(options.TeamsCollectorOptions),
 		(*connector.NoPayload)(nil),
 		runner.FeatureResumeBehaviorNone,
-		runner.GrantCredential,
+		msTeamsCredentials,
 		runner.Factory(collectors.NewTeamsCollector),
 	)
 
@@ -48,7 +56,7 @@ func WithManifest() *runner.Manifest {
 		new(options.ChannelsCollectorOptions),
 		(*connector.NoPayload)(nil),
 		runner.FeatureResumeBehaviorNone,
-		runner.GrantCredential,
+		msTeamsCredentials,
 		runner.Factory(collectors.NewChannelsCollector),
 	)
 
@@ -62,7 +70,7 @@ func WithManifest() *runner.Manifest {
 		new(options.SendMessageActionOptions),
 		new(payloads.SendMessagePayload),
 		runner.FeatureResumeBehaviorNone,
-		runner.GrantCredential,
+		msTeamsCredentials,
 		runner.Factory(actions.NewSendMessageAction),
 	)
 

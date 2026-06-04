@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 )
 
 // AzureADCredentials holds the OAuth 2.0 client credentials for the Microsoft Graph API.
@@ -25,11 +27,14 @@ type tokenResponse struct {
 	ExpiresIn   int    `json:"expires_in"`
 }
 
-// ParseCredentials deserializes client_id and client_secret from raw JSON credentials.
-// The tenantID is supplied from feature options, not from the credentials secret,
-// aligning with the GrantCredential template which only stores client_id and client_secret.
-func ParseCredentials(raw json.RawMessage, tenantID string) (*AzureADCredentials, error) {
-	if len(raw) == 0 {
+// ParseCredentials deserializes client_id and client_secret from the connector's
+// default credential slot. The tenantID is supplied from feature options, not from
+// the credentials secret, aligning with the GrantCredential template which only
+// stores client_id and client_secret. ms-teams declares a single credential, so the
+// binding lives under connectorutil.DefaultCredentialName.
+func ParseCredentials(credentials map[string]json.RawMessage, tenantID string) (*AzureADCredentials, error) {
+	raw, ok := credentials[connectorutil.DefaultCredentialName]
+	if !ok || len(raw) == 0 {
 		return nil, fmt.Errorf("no credentials provided")
 	}
 

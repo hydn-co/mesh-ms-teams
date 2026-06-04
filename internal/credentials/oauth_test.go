@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
+
 	"github.com/hydn-co/mesh-ms-teams/internal/credentials"
 )
 
@@ -19,7 +21,8 @@ func TestShouldParseCredentialsWhenValidJSON(t *testing.T) {
 	raw := json.RawMessage(`{"client_id":"def456","client_secret":"s3cr3t"}`)
 
 	// Act
-	creds, err := credentials.ParseCredentials(raw, "abc123")
+	creds, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "abc123")
 
 	// Assert
 	require.NoError(t, err)
@@ -33,7 +36,8 @@ func TestShouldReturnErrorWhenCredentialsEmpty(t *testing.T) {
 	raw := json.RawMessage{}
 
 	// Act
-	_, err := credentials.ParseCredentials(raw, "abc123")
+	_, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "abc123")
 
 	// Assert
 	assert.ErrorContains(t, err, "no credentials")
@@ -44,7 +48,8 @@ func TestShouldReturnErrorWhenJSONInvalid(t *testing.T) {
 	raw := json.RawMessage(`{not valid json`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw, "abc123")
+	_, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "abc123")
 
 	// Assert
 	assert.Error(t, err)
@@ -55,7 +60,8 @@ func TestShouldReturnErrorWhenTenantIDMissing(t *testing.T) {
 	raw := json.RawMessage(`{"client_id":"id","client_secret":"s"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw, "")
+	_, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "")
 
 	// Assert
 	assert.ErrorContains(t, err, "tenant_id")
@@ -66,7 +72,8 @@ func TestShouldReturnErrorWhenClientIDMissing(t *testing.T) {
 	raw := json.RawMessage(`{"client_secret":"s"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw, "t1")
+	_, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "t1")
 
 	// Assert
 	assert.ErrorContains(t, err, "client_id")
@@ -77,7 +84,8 @@ func TestShouldReturnErrorWhenClientSecretMissing(t *testing.T) {
 	raw := json.RawMessage(`{"client_id":"id"}`)
 
 	// Act
-	_, err := credentials.ParseCredentials(raw, "t1")
+	_, err := credentials.ParseCredentials(
+		map[string]json.RawMessage{connectorutil.DefaultCredentialName: raw}, "t1")
 
 	// Assert
 	assert.ErrorContains(t, err, "client_secret")
