@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/fgrzl/json v1.0.2
-	github.com/hydn-co/mesh-sdk v0.2.74
+	github.com/hydn-co/mesh-sdk v0.2.83
 	github.com/stretchr/testify v1.11.1
 )
 
