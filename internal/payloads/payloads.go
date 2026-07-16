@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/fgrzl/json/polymorphic"
+	"github.com/hydn-co/substrate/json/polymorphic"
 )
 
 func init() {
