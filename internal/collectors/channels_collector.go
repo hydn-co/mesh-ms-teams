@@ -6,8 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/entities"
-	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
-	"github.com/hydn-co/mesh-sdk/pkg/catalog/types"
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
 	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
@@ -19,18 +17,71 @@ import (
 	"github.com/hydn-co/mesh-ms-teams/internal/teams"
 )
 
+// channelsGraphClient is the collector-local view of the Microsoft Graph API
+// used by the channels collector. Contract tests inject a fake through newClient.
+type channelsGraphClient interface {
+	ListTeams(ctx context.Context) (*teams.ListTeamsResult, error)
+	ListTeamsPage(ctx context.Context, pageURL string) (*teams.ListTeamsResult, error)
+	ListChannels(ctx context.Context, teamID string) (*channels.ListChannelsResult, error)
+	ListChannelsPage(ctx context.Context, pageURL string) (*channels.ListChannelsResult, error)
+}
+
+// channelsGraphClientFactory builds a channelsGraphClient from parsed credentials.
+type channelsGraphClientFactory func(ctx context.Context, creds *credentials.AzureADCredentials) (channelsGraphClient, error)
+
+// defaultChannelsGraphClientFactory exchanges the parsed credentials for an
+// access token and returns a token-bound Microsoft Graph client.
+func defaultChannelsGraphClientFactory(
+	ctx context.Context,
+	creds *credentials.AzureADCredentials,
+) (channelsGraphClient, error) {
+	token, err := creds.GetAccessToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire access token: %w", err)
+	}
+	return &channelsGraphAPI{token: token}, nil
+}
+
+// channelsGraphAPI adapts the package-level Graph helpers to channelsGraphClient.
+type channelsGraphAPI struct {
+	token string
+}
+
+func (a *channelsGraphAPI) ListTeams(ctx context.Context) (*teams.ListTeamsResult, error) {
+	return teams.ListTeams(ctx, a.token)
+}
+
+func (a *channelsGraphAPI) ListTeamsPage(ctx context.Context, pageURL string) (*teams.ListTeamsResult, error) {
+	return teams.ListTeamsPage(ctx, a.token, pageURL)
+}
+
+func (a *channelsGraphAPI) ListChannels(ctx context.Context, teamID string) (*channels.ListChannelsResult, error) {
+	return channels.ListChannels(ctx, a.token, teamID)
+}
+
+func (a *channelsGraphAPI) ListChannelsPage(
+	ctx context.Context,
+	pageURL string,
+) (*channels.ListChannelsResult, error) {
+	return channels.ListChannelsPage(ctx, a.token, pageURL)
+}
+
 // ChannelsCollector collects channels across all teams and emits them as catalog entities.
 type ChannelsCollector struct {
 	*connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload]
-	token string
-	state connectorutil.FeatureState
+	client    channelsGraphClient
+	newClient channelsGraphClientFactory
+	state     connectorutil.FeatureState
 }
 
 // NewChannelsCollector constructs a ChannelsCollector.
 func NewChannelsCollector(
 	ctx *connector.TypedFeatureContext[*options.ChannelsCollectorOptions, *connector.NoPayload],
 ) runner.Feature {
-	return &ChannelsCollector{TypedFeatureContext: ctx}
+	return &ChannelsCollector{
+		TypedFeatureContext: ctx,
+		newClient:           defaultChannelsGraphClientFactory,
+	}
 }
 
 // Init prepares the collector for operation by validating credentials.
@@ -58,20 +109,20 @@ func (c *ChannelsCollector) Init(ctx context.Context) error {
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
-	token, err := creds.GetAccessToken(ctx)
+	client, err := c.newClient(ctx, creds)
 	if err != nil {
 		connectorutil.LogFeature(
 			ctx,
 			c.TypedFeatureContext,
 			slog.LevelError,
-			"failed to acquire access token",
+			"failed to create Microsoft Graph client",
 			"error",
 			err,
 		)
-		return fmt.Errorf("failed to acquire access token: %w", err)
+		return fmt.Errorf("failed to create Microsoft Graph client: %w", err)
 	}
 
-	c.token = token
+	c.client = client
 	c.state.MarkReady()
 	return nil
 }
@@ -96,9 +147,9 @@ func (c *ChannelsCollector) Start(ctx context.Context) error {
 		var err error
 
 		if teamPageURL == "" {
-			teamResult, err = teams.ListTeams(ctx, c.token)
+			teamResult, err = c.client.ListTeams(ctx)
 		} else {
-			teamResult, err = teams.ListTeamsPage(ctx, c.token, teamPageURL)
+			teamResult, err = c.client.ListTeamsPage(ctx, teamPageURL)
 		}
 
 		if err != nil {
@@ -133,9 +184,9 @@ func (c *ChannelsCollector) collectChannelsForTeam(ctx context.Context, teamID s
 		var err error
 
 		if channelPageURL == "" {
-			result, err = channels.ListChannels(ctx, c.token, teamID)
+			result, err = c.client.ListChannels(ctx, teamID)
 		} else {
-			result, err = channels.ListChannelsPage(ctx, c.token, channelPageURL)
+			result, err = c.client.ListChannelsPage(ctx, channelPageURL)
 		}
 
 		if err != nil {
@@ -146,7 +197,6 @@ func (c *ChannelsCollector) collectChannelsForTeam(ctx context.Context, teamID s
 
 		for _, channel := range result.Value {
 			channelEntity := &entities.Channel{
-				Metadata:    types.EntityMetadata{Space: spaces.Channels},
 				ChannelRef:  channel.ID,
 				Name:        channel.DisplayName,
 				Description: channel.Description,
@@ -179,6 +229,6 @@ func (c *ChannelsCollector) Stop(ctx context.Context) error {
 	}
 
 	c.state.Reset()
-	c.token = ""
+	c.client = nil
 	return nil
 }
