@@ -6,8 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/entities"
-	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
-	"github.com/hydn-co/mesh-sdk/pkg/catalog/types"
 	"github.com/hydn-co/mesh-sdk/pkg/connector"
 	"github.com/hydn-co/mesh-sdk/pkg/connectorutil"
 	"github.com/hydn-co/mesh-sdk/pkg/runner"
@@ -18,18 +16,58 @@ import (
 	"github.com/hydn-co/mesh-ms-teams/internal/teams"
 )
 
+// teamsGraphClient is the collector-local view of the Microsoft Graph API used
+// by the teams collector. Contract tests inject a fake through newClient.
+type teamsGraphClient interface {
+	ListTeams(ctx context.Context) (*teams.ListTeamsResult, error)
+	ListTeamsPage(ctx context.Context, pageURL string) (*teams.ListTeamsResult, error)
+}
+
+// teamsGraphClientFactory builds a teamsGraphClient from parsed credentials.
+type teamsGraphClientFactory func(ctx context.Context, creds *credentials.AzureADCredentials) (teamsGraphClient, error)
+
+// defaultTeamsGraphClientFactory exchanges the parsed credentials for an access
+// token and returns a token-bound Microsoft Graph client.
+func defaultTeamsGraphClientFactory(
+	ctx context.Context,
+	creds *credentials.AzureADCredentials,
+) (teamsGraphClient, error) {
+	token, err := creds.GetAccessToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire access token: %w", err)
+	}
+	return &teamsGraphAPI{token: token}, nil
+}
+
+// teamsGraphAPI adapts the package-level Graph helpers to teamsGraphClient.
+type teamsGraphAPI struct {
+	token string
+}
+
+func (a *teamsGraphAPI) ListTeams(ctx context.Context) (*teams.ListTeamsResult, error) {
+	return teams.ListTeams(ctx, a.token)
+}
+
+func (a *teamsGraphAPI) ListTeamsPage(ctx context.Context, pageURL string) (*teams.ListTeamsResult, error) {
+	return teams.ListTeamsPage(ctx, a.token, pageURL)
+}
+
 // TeamsCollector collects teams from Microsoft Teams and emits them as catalog entities.
 type TeamsCollector struct {
 	*connector.TypedFeatureContext[*options.TeamsCollectorOptions, *connector.NoPayload]
-	token string
-	state connectorutil.FeatureState
+	client    teamsGraphClient
+	newClient teamsGraphClientFactory
+	state     connectorutil.FeatureState
 }
 
 // NewTeamsCollector constructs a TeamsCollector.
 func NewTeamsCollector(
 	ctx *connector.TypedFeatureContext[*options.TeamsCollectorOptions, *connector.NoPayload],
 ) runner.Feature {
-	return &TeamsCollector{TypedFeatureContext: ctx}
+	return &TeamsCollector{
+		TypedFeatureContext: ctx,
+		newClient:           defaultTeamsGraphClientFactory,
+	}
 }
 
 // Init prepares the collector for operation by validating credentials.
@@ -57,20 +95,20 @@ func (c *TeamsCollector) Init(ctx context.Context) error {
 		return fmt.Errorf("failed to parse credentials: %w", err)
 	}
 
-	token, err := creds.GetAccessToken(ctx)
+	client, err := c.newClient(ctx, creds)
 	if err != nil {
 		connectorutil.LogFeature(
 			ctx,
 			c.TypedFeatureContext,
 			slog.LevelError,
-			"failed to acquire access token",
+			"failed to create Microsoft Graph client",
 			"error",
 			err,
 		)
-		return fmt.Errorf("failed to acquire access token: %w", err)
+		return fmt.Errorf("failed to create Microsoft Graph client: %w", err)
 	}
 
-	c.token = token
+	c.client = client
 	c.state.MarkReady()
 	return nil
 }
@@ -95,9 +133,9 @@ func (c *TeamsCollector) Start(ctx context.Context) error {
 		var err error
 
 		if pageURL == "" {
-			result, err = teams.ListTeams(ctx, c.token)
+			result, err = c.client.ListTeams(ctx)
 		} else {
-			result, err = teams.ListTeamsPage(ctx, c.token, pageURL)
+			result, err = c.client.ListTeamsPage(ctx, pageURL)
 		}
 
 		if err != nil {
@@ -107,7 +145,6 @@ func (c *TeamsCollector) Start(ctx context.Context) error {
 
 		for _, team := range result.Value {
 			groupEntity := &entities.Group{
-				Metadata:    types.EntityMetadata{Space: spaces.Groups},
 				GroupRef:    team.ID,
 				Name:        team.DisplayName,
 				Description: team.Description,
@@ -140,6 +177,6 @@ func (c *TeamsCollector) Stop(ctx context.Context) error {
 	}
 
 	c.state.Reset()
-	c.token = ""
+	c.client = nil
 	return nil
 }

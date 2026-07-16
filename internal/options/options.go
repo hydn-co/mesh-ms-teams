@@ -1,8 +1,8 @@
 package options
 
 import (
-	"github.com/fgrzl/json/polymorphic"
 	"github.com/hydn-co/mesh-sdk/pkg/catalog/spaces"
+	"github.com/hydn-co/substrate/json/polymorphic"
 )
 
 func init() {
